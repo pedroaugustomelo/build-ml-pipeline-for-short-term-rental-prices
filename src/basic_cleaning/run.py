@@ -5,6 +5,7 @@ Download from W&B the raw dataset and apply some basic data cleaning, exporting 
 import argparse
 import logging
 import wandb
+import pandas as pd
 
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)-15s %(message)s")
@@ -19,7 +20,15 @@ def go(args):
     # Download input artifact. This will also log that this script is using this
     # particular version of the artifact
     # artifact_local_path = run.use_artifact(args.input_artifact).file()
-
+    local_path = wandb.use_artifact("sample.csv:latest").file()
+    df = pd.read_csv(local_path)
+    # Drop outliers
+    idx = df['price'].between(args.min_price, args.max_price)
+    df = df[idx].copy()
+    # Convert last_review to datetime
+    df['last_review'] = pd.to_datetime(df['last_review'])
+    df.to_csv("clean_sample.csv", index=False)
+    
     artifact = wandb.Artifact(
      args.output_artifact,
      type=args.output_type,
