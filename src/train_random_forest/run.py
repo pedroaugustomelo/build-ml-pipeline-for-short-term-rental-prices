@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 
 import mlflow
 import json
+import yaml
 
 import pandas as pd
 import numpy as np
@@ -45,7 +46,7 @@ def go(args):
 
     # Get the Random Forest configuration and update W&B
     with open(args.rf_config) as fp:
-        rf_config = json.load(fp)
+        rf_config = yaml.safe_load(fp)
     run.config.update(rf_config)
 
     # Fix the random seed for the Random Forest, so we get reproducible results
@@ -97,7 +98,12 @@ def go(args):
     ######################################
     # Save the sk_pipe pipeline as a mlflow.sklearn model in the directory "random_forest_dir"
     # HINT: use mlflow.sklearn.save_model
-    mlflow.sklearn.save_model(sk_pipe, "random_forest_dir")
+    signature = mlflow.models.infer_signature(X_val[processed_features], y_pred)
+
+    mlflow.sklearn.save_model(sk_pipe, 
+                              "random_forest_dir",
+                               signature=signature,
+                                input_example=X_val.iloc[:5])
     ######################################
 
     ######################################
@@ -106,7 +112,7 @@ def go(args):
     # type, provide a description and add rf_config as metadata. Then, use the .add_dir method of the artifact instance
     # you just created to add the "random_forest_dir" directory to the artifact, and finally use
     # run.log_artifact to log the artifact to the run
-    artifact = wandb.Artifact(name=args.output_artifact, type="model_export", description="Random Forest Pipeline", metadata=args.rf_config)
+    artifact = wandb.Artifact(name=args.output_artifact, type="model_export", description="Random Forest Inference Pipeline")
     artifact.add_dir("random_forest_dir")
     run.log_artifact(artifact)
     ######################################

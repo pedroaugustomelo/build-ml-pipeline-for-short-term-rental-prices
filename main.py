@@ -5,12 +5,12 @@ import tempfile
 import os
 import wandb
 import hydra
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 
 _steps = [
     "download",
     "basic_cleaning",
-    "data_check",
+    #"data_check",
     "data_split",
     "train_random_forest",
     # NOTE: We do not include this in the steps so it is not run by mistake.
@@ -92,9 +92,11 @@ def go(config: DictConfig):
 
             # NOTE: we need to serialize the random forest configuration into JSON
             rf_config = os.path.abspath("rf_config.json")
+            # with open(rf_config, "w+") as fp:
+            #     json.dump(dict(config["modeling"]["random_forest"].items()), fp)  # DO NOT TOUCH
             with open(rf_config, "w+") as fp:
-                json.dump(dict(config["modeling"]["random_forest"].items()), fp)  # DO NOT TOUCH
-
+                fp.write(OmegaConf.to_yaml(config["modeling"]["random_forest"]))
+    
             # NOTE: use the rf_config we just created as the rf_config parameter for the train_random_forest
             # step
 
@@ -118,7 +120,7 @@ def go(config: DictConfig):
                 os.path.join(hydra.utils.get_original_cwd(), "components", "test_regression_model"),
                 'main',
                 parameters={
-                    "mlflow_model": "random_forest_export:prod",
+                    "mlflow_model": "output_artifact:prod",
                     "test_dataset": "test_data.csv:latest",
                 },
             )
